@@ -1,3 +1,4 @@
+--This is an example written by Yan Malahovski
 {-# LANGUAGE RankNTypes, UnicodeSyntax #-}
 module MonPar where
 
