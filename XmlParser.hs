@@ -7,15 +7,16 @@ import Control.Applicative
 import Control.Monad.State
 import Data.Char
 
+hole :: hole
 hole = hole
 
 type Parser a = StateT String Maybe a
 
 lengthc :: (Eq a) => [a] -> Int -> Maybe b -> Maybe b
-lengthc str n foo = if (length str < n) then Nothing else foo
+lengthc str n foo = if length str < n then Nothing else foo
 
 bypred :: (Char -> Bool) -> Parser Char
-bypred foo = StateT $ \s -> lengthc s 1 $ if (foo $ head s) then Just (head s, tail s) else Nothing
+bypred foo = StateT $ \s -> lengthc s 1 $ if foo $ head s then Just (head s, tail s) else Nothing
 
 char :: Char -> Parser Char
 char c = bypred (== c)
@@ -27,13 +28,15 @@ spaces :: Parser String
 spaces = many $ char ' '
 
 text :: String -> Parser String
-text str = StateT $ \s -> lengthc s (length str) $ if (take (length str) s == str) then Just (str, drop (length str) s) else Nothing  
+text str = StateT $ \s -> lengthc s (length str) $ if take (length str) s == str
+                                                   then Just (str, drop (length str) s)
+                                                   else Nothing
 
 between :: Parser a -> Parser b -> Parser c -> Parser b
 between f p g = f >> p >>= \x -> g >> return x
 
 regtext :: Parser String
-regtext = some (bypred $ \x -> not $ x `elem` "<>&")
+regtext = some (bypred $ \x -> x `notElem` "<>&")
 
 conc :: Parser [a] -> Parser [a] -> Parser [a] -> Parser [a]
 conc f g h = do
@@ -41,13 +44,13 @@ conc f g h = do
   y <- g
   z <- h
   return (x ++ y ++ z)
-  
+
 --------------------------------------------------------------------------------
 
 type Heading = String
 
-data Xml = Tag Heading [Block] 
-data Block = Text String | Inner Xml 
+data Xml = Tag Heading [Block]
+data Block = Text String | Inner Xml
 
 opentag = between (text "<") regtext (text ">")
 closetag s = text $ "</" ++ s ++ ">"
@@ -56,8 +59,8 @@ parseXml = do
   g <- many parseBlock
   c <- closetag o
   return $ Tag o g
-           
-token = (transf <$> between (text "&") letters (text ";")) <|> return [] 
+
+token = (transf <$> between (text "&") letters (text ";")) <|> return []
 parseBlock = (Text <$> conc token regtext token) <|> (Inner <$> parseXml)
 parse str = case runStateT (many parseXml) str of
   Just (a, []) -> a
@@ -69,25 +72,20 @@ transf "ls" = "<"
 --------------------------------------------------------------------------------
 
 instance Show Block where
-  show a = blockout 0 a
+  show = blockout 0
 instance Show Xml where
-  show a = xmlout 0 a
-xmlout n (Tag str blcks) = do
+  show = xmlout 0
+xmlout n (Tag str blcks) =
        take (2*n) (cycle " ") ++ "<" ++ str ++ ">\n"
-         ++ (concat $ map (blockout (n + 1)) blcks)
-         ++ (take (2*n) (cycle " ")) ++ "</" ++ str ++ ">"
-         
+         ++ concatMap (blockout (n + 1)) blcks
+         ++ take (2*n) (cycle " ") ++ "</" ++ str ++ ">"
+
 blockout n (Text s) = take (2*n) (cycle " ") ++ s ++ "\n"
 blockout n (Inner h) = xmlout n h ++ "\n"
 
-
 --------------------------------------------------------------------------------
-
 
 main = do
   x <- readFile "html.in"
   print $
-    concat $
-    map (\x -> show x) $
-    parse (concat $ lines x)
-  
+    concatMap show (parse $ concat $ lines x)

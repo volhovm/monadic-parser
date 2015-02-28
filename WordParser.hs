@@ -12,13 +12,13 @@ import Control.Monad.State
 --type SP a = State String (Maybe a)
 type SP a = StateT String Identity (Maybe a)
 
---instance Monad (State s) where 
+--instance Monad (State s) where
  -- return a = StateT $ \s -> (Just a, s)
-  --st >>= f = StateT $ \s -> let (u, i) = runState st s 
+  --st >>= f = StateT $ \s -> let (u, i) = runState st s
   --                              in case u of
-      --                               Nothing -> (Nothing, i) 
+      --                               Nothing -> (Nothing, i)
     --                                 Just a -> runState (f a) i
-                                    
+
 --instance MonadPlus (State s) where
    -- mzero = StateT $ \s -> (Nothing, s)
     --mplus = undefined
@@ -34,12 +34,10 @@ capital :: SP String
 capital = someWord $ isUpper . head
 
 middle :: SP String
-middle = someWord $ (\x -> True) 
+middle = someWord $ (\x -> True)
 
 dotted :: SP String
 dotted = someWord $ ((==) '.') . last
 
 runSP :: String -> SP a -> Maybe a
 runSP str sp = fst (runState sp str)
-
-   
